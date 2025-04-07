@@ -92,3 +92,62 @@ def analyze_monthly_active_users():
     bar_plot.savefig('monthly_active_users_bar.png')
     
     return monthly_active_df
+
+# ------------ Stickiness -------------------------
+
+def calculate_stickiness(csv_path):
+    df = pd.read_csv(csv_path)
+    df['Time_utc'] = pd.to_datetime(df['Time_utc'])
+    
+    df['Date'] = df['Time_utc'].dt.date
+    df['Year_Month'] = df['Time_utc'].dt.to_period('M')
+    
+    daily_active = df.groupby(['Year_Month', 'Date'])['pid'].nunique().reset_index()
+    
+    monthly_active = df.groupby('Year_Month')['pid'].nunique().reset_index()
+    monthly_active.columns = ['Year_Month', 'MAU']
+    
+    avg_dau = daily_active.groupby('Year_Month')['pid'].mean().reset_index()
+    avg_dau.columns = ['Year_Month', 'Average_DAU']
+    
+    stickiness_df = pd.merge(avg_dau, monthly_active, on='Year_Month')
+    
+    stickiness_df['Stickiness'] = stickiness_df['Average_DAU'] / stickiness_df['MAU']
+    
+    stickiness_df['Month'] = stickiness_df['Year_Month'].astype(str)
+    
+    return stickiness_df
+
+def plot_stickiness(stickiness_df):
+    plt.figure(figsize=(12, 8))
+    
+    ax = plt.subplot(111)
+    bars = ax.bar(stickiness_df['Month'], stickiness_df['Stickiness'], color='skyblue', alpha=0.7)
+    
+    ax.plot(stickiness_df['Month'], stickiness_df['Stickiness'], 'o-', color='darkblue', linewidth=2)
+    
+    for bar in bars:
+        height = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2., height + 0.01,
+                f'{height:.2f}', ha='center', va='bottom')
+    
+    plt.title('Player Stickiness (DAU/MAU) by Month', fontsize=15)
+    plt.xlabel('Month', fontsize=12)
+    plt.ylabel('Stickiness (DAU/MAU)', fontsize=12)
+    plt.ylim(0, min(1, stickiness_df['Stickiness'].max() * 1.2))  
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+    plt.xticks(rotation=45)
+    
+    plt.axhline(y=1.0, color='r', linestyle='--', alpha=0.5)
+    plt.text(0, 1.02, 'Maximum (1.0)', color='r', alpha=0.7)
+    
+    plt.tight_layout()
+    plt.savefig('player_stickiness.png', dpi=300)
+    
+    return plt
+
+def analyze_stickiness():
+    csv_path = 'data/player_logged_in.csv'
+    stickiness_df = calculate_stickiness(csv_path)
+    plot = plot_stickiness(stickiness_df)
+    return stickiness_df, plot
