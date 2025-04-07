@@ -1,0 +1,16 @@
+COPY demographics FROM 'data/demographics.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY study_prompt_answered FROM 'data/study_prompt_answered.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY mood_reported FROM 'data/mood_reported.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY player_logged_in FROM 'data/player_logged_in.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY game_saved FROM 'data/game_saved.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY study_reward_claimed FROM 'data/study_reward_claimed.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY study_reward_unlocked FROM 'data/study_reward_unlocked.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY update_current_state FROM 'data/update_current_state.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY subtask_completed FROM 'data/subtask_completed.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY task_completed FROM 'data/task_completed.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY job_started FROM 'data/job_started.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY job_resumed FROM 'data/job_resumed.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY job_exited FROM 'data/job_exited.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY job_completed FROM 'data/job_completed.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY item_purchased FROM 'data/item_purchased.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
+COPY exited_game FROM 'data/exited_game.csv' (FORMAT 'csv', quote '"', DELIMITER ',', HEADER 'true');
