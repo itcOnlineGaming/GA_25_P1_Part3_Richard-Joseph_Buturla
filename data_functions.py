@@ -151,3 +151,80 @@ def analyze_stickiness():
     stickiness_df = calculate_stickiness(csv_path)
     plot = plot_stickiness(stickiness_df)
     return stickiness_df, plot
+
+
+def load_data(login_path, exit_path):
+    logins_df = pd.read_csv(login_path)
+    exits_df = pd.read_csv(exit_path)
+    
+    logins_df['Time_utc'] = pd.to_datetime(logins_df['Time_utc'])
+    exits_df['Time_utc'] = pd.to_datetime(exits_df['Time_utc'])
+    
+    return logins_df, exits_df
+
+def estimate_sessions(logins_df, exits_df):
+    total_sessions = len(logins_df)
+    
+    session_lengths = exits_df['CurrentSessionLength'].dropna()
+    
+    median_session_time = session_lengths.median()
+    
+    return total_sessions, median_session_time
+
+def calculate_sessions_per_user_per_month(logins_df):
+    logins_df['Time_utc'] = pd.to_datetime(logins_df['Time_utc'])
+    logins_df['Year_Month'] = logins_df['Time_utc'].dt.to_period('M')
+    
+    sessions_per_user = logins_df.groupby(['Year_Month', 'pid']).size().reset_index(name='sessions')
+    
+    monthly_avg = sessions_per_user.groupby('Year_Month')['sessions'].mean().reset_index()
+    monthly_avg['Year_Month'] = monthly_avg['Year_Month'].astype(str)
+    
+    return monthly_avg
+
+def visualize_metrics(total_sessions, median_session_time, monthly_sessions_per_user):
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    print("Total Number of Sessions Played:", total_sessions)
+    print("Median Session Time (minutes):", median_session_time)
+    
+    ax.plot(monthly_sessions_per_user['Year_Month'], monthly_sessions_per_user['sessions'], 
+            marker='o', linestyle='-', color='salmon', linewidth=2)
+    ax.bar(monthly_sessions_per_user['Year_Month'], monthly_sessions_per_user['sessions'], 
+           alpha=0.5, color='salmon')
+    
+    ax.set_title('Average Sessions per User per Month', fontsize=14)
+    ax.set_xlabel('Month', fontsize=12)
+    ax.set_ylabel('Average Sessions', fontsize=12)
+    plt.xticks(rotation=45)
+    ax.grid(True, axis='y', alpha=0.3)
+    
+    for i, v in enumerate(monthly_sessions_per_user['sessions']):
+        ax.text(i, v + 0.1, f"{v:.2f}", ha='center')
+    
+    plt.tight_layout()
+    plt.savefig('session_metrics.png', dpi=300)
+    return fig
+
+def analyze_sessions(login_path, exit_path):
+    logins_df, exits_df = load_data(login_path, exit_path)
+    
+    total_sessions, median_session_time = estimate_sessions(logins_df, exits_df)
+    monthly_sessions_per_user = calculate_sessions_per_user_per_month(logins_df)
+    
+    plot = visualize_metrics(total_sessions, median_session_time, monthly_sessions_per_user)
+    
+    return {
+        'total_sessions': total_sessions,
+        'median_session_time': median_session_time,
+        'monthly_sessions_per_user': monthly_sessions_per_user,
+        'plot': plot
+    }
+
+def analyze_total_sessions():
+    results = analyze_sessions('data/player_logged_in.csv', 'data/exited_game.csv')
+    print(f"Total Sessions: {results['total_sessions']}")
+    print(f"Median Session Time (minutes): {results['median_session_time']}")
+    print("Average Sessions per User per Month:")
+    print(results['monthly_sessions_per_user'])
+    results['plot'].show()
