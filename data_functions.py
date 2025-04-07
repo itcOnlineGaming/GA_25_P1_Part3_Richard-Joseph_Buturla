@@ -548,3 +548,72 @@ def run_full_progression_rate_analysis(
     print("Analysis complete.")
     
     return player_rate_stats, job_rate_stats
+
+def analyze_peak_play_times(
+    file_paths: List[str],
+    timestamp_cols: List[str] = ['Time_utc', 'Time'] 
+    ) -> Optional[pd.Series]:
+    
+    all_timestamps = []
+    print(f"Analyzing peak times from {len(file_paths)} file(s)...")
+
+    for file_path in file_paths:
+        if not os.path.exists(file_path):
+            print(f"Warning: File not found, skipping: {file_path}")
+            continue
+            
+        try:
+            df = pd.read_csv(file_path, low_memory=False)
+            
+            col_to_use = None
+            for col in timestamp_cols:
+                if col in df.columns:
+                    col_to_use = col
+                    break
+            
+            if col_to_use is None:
+                print(f"Warning: No suitable timestamp column {timestamp_cols} found in {file_path}. Skipping.")
+                continue
+
+            timestamps = pd.to_datetime(df[col_to_use], errors='coerce')
+            timestamps = timestamps.dropna()
+            all_timestamps.append(timestamps)
+
+        except Exception as e:
+            print(f"Warning: Could not process file {file_path}. Error: {e}. Skipping.")
+
+    if not all_timestamps:
+        print("Error: No valid timestamps could be extracted from any provided files.")
+        return None
+
+    combined_timestamps = pd.concat(all_timestamps, ignore_index=True)
+    
+    if combined_timestamps.empty:
+        print("Error: Combined timestamps list is empty after processing files.")
+        return None
+        
+    if pd.api.types.is_datetime64_any_dtype(combined_timestamps) and combined_timestamps.dt.tz is None:
+         try:
+             combined_timestamps = combined_timestamps.dt.tz_localize('UTC')
+             print("Info: Assuming timestamps are UTC and localized.")
+         except TypeError:
+              print("Warning: Could not automatically localize timestamps to UTC. Using naive hour extraction.")
+              pass
+
+    hours = combined_timestamps.dt.hour
+    hourly_counts = hours.value_counts().sort_index()
+    
+    hourly_counts = hourly_counts.reindex(range(24), fill_value=0)
+
+    print("Plotting hourly activity...")
+    plt.figure(figsize=(12, 6))
+    sns.barplot(x=hourly_counts.index, y=hourly_counts.values, color='skyblue')
+    plt.title('Player Activity by Hour of Day (UTC)')
+    plt.xlabel('Hour of Day (UTC)')
+    plt.ylabel('Number of Recorded Events')
+    plt.xticks(range(24))
+    plt.grid(axis='y', linestyle='--')
+    plt.tight_layout()
+    plt.show()
+
+    return hourly_counts
